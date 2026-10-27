@@ -1,0 +1,15 @@
+78098b89c88a74ebe8c20117b8754620
+::res://::1793109742
+icon.svg::CompressedTexture2D::8811321510631444437::1792500592::1792870768::1::::<><><>0<>0<>f90e4fac413f3d02d659c4e631d4a4a8<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
+README.md::TextFile::-1::1792657772::0::1::::<><><>0<>0<><>::
+::res://autoload/::1792870768
+game_state.gd::GDScript::8499868657250883263::1792760196::0::1::::<>Node<><>0<>0<><>::
+::res://data/::1792870768
+game_data.gd::GDScript::4984686403548384628::1792657658::0::1::::<>RefCounted<><>0<>0<><>::
+::res://scenes/::1792870733
+main.tscn::PackedScene::-1::1792500596::0::1::::<><><>0<>0<><>::res://scripts/main.gd
+::res://scripts/::1792870768
+base_ui.gd::GDScript::7590295427072237975::1792760196::0::1::::<>Control<><>0<>0<><>::
+icon_view.gd::GDScript::3046946254190360359::1792561986::0::1::::<>Control<><>0<>0<><>::
+main.gd::GDScript::3736421543798148033::1792760196::0::1::::<>Control<><>0<>0<><>::
+yard_view.gd::GDScript::1516770743212130333::1792605418::0::1::::<>Control<><>0<>0<><>::
