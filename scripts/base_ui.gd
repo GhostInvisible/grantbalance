@@ -60,7 +60,7 @@ var option_colors: Dictionary = {
 	"Мероприятия": C_GREEN, "Оплата труда и налоги": C_BLUE, "Оборудование": C_PURPLE,
 	"Аренда и связь": C_ORANGE, "Не принимать к отчёту": C_RED,
 }
-var comp_colors: Dictionary = {"comm": C_PINK, "analytics": C_BLUE, "docs": C_TEAL, "lead": C_ORANGE}
+var comp_colors: Dictionary = {"plan": C_BLUE, "acc": C_PINK, "docs": C_TEAL, "contr": C_PURPLE, "appr": C_ORANGE}
 var color_names: Dictionary = {
 	"green": C_GREEN, "blue": C_BLUE, "purple": C_PURPLE, "orange": C_ORANGE,
 	"pink": C_PINK, "teal": C_TEAL, "yellow": C_YELLOW, "red": C_RED,
@@ -527,6 +527,8 @@ func update_hud() -> void:
 		var txt := "В месяц: %s%s" % [("+" if net > 0 else ""), GameState.fmt(net)]
 		if int(mf["tranche"]) > 0:
 			txt += "  |  транш +%s через %d мес." % [GameState.fmt(int(mf["tranche"])).replace(" руб.", ""), int(mf["left"])]
+		if int(mf["incoming"]) > 0:
+			txt += "  |  в пути +%s" % GameState.fmt(int(mf["incoming"])).replace(" руб.", "")
 		hud_flow.text = txt
 		hud_flow.add_theme_color_override("font_color", C_ORANGE if net < 0 else C_GREEN)
 
@@ -593,14 +595,17 @@ func show_profile() -> void:
 		lc.add_child(_label(txt, 17, C_GREEN if done else C_GRAY))
 
 	var ic := _card(content, C_BLUE)
-	var sc_name := "Не выбран"
-	for s in Data.SCENARIOS:
-		if s["id"] == GameState.scenario_id:
-			sc_name = str(s["name"])
-	ic.add_child(_label("Проект: " + sc_name, 17))
-	ic.add_child(_label("Куратор: " + str(donor_titles.get(str(GameState.donor.get("id", "normal")), "Обычный")), 17))
-	if GameState.spec != "":
-		ic.add_child(_label("Профиль: " + str(Data.SPECS[GameState.spec]["name"]), 17))
+	ic.add_child(_label("Проект: «Эко-двор», грант %s" % GameState.fmt(GameState.GRANT_TOTAL), 17))
+	ic.add_child(_label("График траншей: " + GameState.tranche_name, 17))
+	ic.add_child(_label("Нарушений исправлено до проверки: %d" % _fixed_count(), 17))
+
+
+func _fixed_count() -> int:
+	var n := 0
+	for it in GameState.issues:
+		if str(it["status"]) == "fixed":
+			n += 1
+	return n
 
 
 func show_achievements() -> void:
@@ -626,31 +631,6 @@ func show_achievements() -> void:
 		v.add_child(_label(str(a["desc"]), 16, C_MUTED))
 
 
-func _standings(parent: Control) -> void:
-	var rows: Array = []
-	rows.append({"name": "Вы", "city": "Школа НКО", "total": GameState.tour_player_total(), "me": true})
-	for r in GameState.tour_rivals:
-		rows.append({"name": r["name"], "city": r["city"], "total": r["total"], "me": false})
-	rows.sort_custom(func(a, b): return a["total"] > b["total"])
-	var i := 0
-	for r in rows:
-		var me: bool = r["me"]
-		var c := _card(parent, C_ORANGE if me else C_BLUE, C_CREAM if me else C_PANEL)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		c.add_child(row)
-		row.add_child(_plain("%d" % (i + 1), 24, C_ORANGE if me else C_MUTED))
-		row.add_child(_label("%s, %s" % [r["name"], r["city"]], 18))
-		row.add_child(_plain("%d" % int(r["total"]), 20, C_ORANGE if me else C_DARK))
-		var bar := _make_bar(C_ORANGE if me else C_BLUE)
-		bar.max_value = 320
-		bar.value = 0
-		c.add_child(bar)
-		var tw := bar.create_tween()
-		tw.tween_property(bar, "value", float(int(r["total"])), 0.7).set_delay(i * 0.08).set_trans(Tween.TRANS_CUBIC)
-		i += 1
-
-
 func show_leaderboard() -> void:
 	_screen(BG_BUDGET)
 	_set_nav(true)
@@ -658,9 +638,6 @@ func show_leaderboard() -> void:
 	var c := _card(content, C_GREEN)
 	c.add_child(_label("Лучший результат кампании: %d из 100" % GameState.best_score, 22, C_GREEN))
 	c.add_child(_label("Попыток: %d" % GameState.attempts, 17, C_MUTED))
-	if not GameState.tour_rivals.is_empty():
-		content.add_child(_plain("Турнир кандидатов", 24))
-		_standings(content)
 	var seen := GameState.endings_seen.size()
 	content.add_child(_plain("Концовки: %d из %d" % [seen, Data.ENDINGS.size()], 24))
 	for id in Data.ENDINGS:
