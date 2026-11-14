@@ -165,17 +165,37 @@ func _design_toggle(id: String) -> void:
 	_design_refresh()
 
 
+func _outline_box(fill: Color, edge: Color) -> StyleBoxFlat:
+	var sb := _box(fill, 16, 12)
+	sb.set_border_width_all(3)
+	sb.border_color = edge
+	return sb
+
+
 func _design_refresh() -> void:
 	for id in design_btns:
 		var b: Button = design_btns[id]
 		var p := GameState.pos(str(id))
 		var on := GameState.plan_has(str(id))
 		var base: Color = line_colors[str(p["cat"])]
-		var col := C_GREEN if on else base
-		b.text = "%s%s  (%s)\n%s" % ["В проекте: " if on else "", p["name"], GameState.fmt(int(p["cost"])), p["desc"]]
-		b.add_theme_stylebox_override("normal", _button_box(col))
-		b.add_theme_stylebox_override("hover", _button_box(col.lightened(0.1)))
-		b.add_theme_stylebox_override("pressed", _button_box(col.darkened(0.15), true))
+		var prefix := "ВЫБРАНО В ПРОЕКТ  |  " if on else "Нажмите, чтобы добавить  |  "
+		b.text = "%s\n%s  (%s)\n%s" % [prefix, p["name"], GameState.fmt(int(p["cost"])), p["desc"]]
+		if on:
+			# выбранная позиция: яркая заливка цветом статьи, белый текст
+			var sel := base.darkened(0.25)
+			b.add_theme_stylebox_override("normal", _outline_box(sel, Color(1, 0.85, 0.2)))
+			b.add_theme_stylebox_override("hover", _outline_box(sel.lightened(0.08), Color(1, 0.85, 0.2)))
+			b.add_theme_stylebox_override("pressed", _outline_box(sel.darkened(0.1), Color(1, 0.85, 0.2)))
+			for n in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				b.add_theme_color_override(n, Color.WHITE)
+		else:
+			# не выбрана: светлая карточка с рамкой цвета статьи и тёмным текстом
+			var light := Color(0.96, 0.97, 0.98)
+			b.add_theme_stylebox_override("normal", _outline_box(light, base))
+			b.add_theme_stylebox_override("hover", _outline_box(Color(0.90, 0.93, 0.96), base))
+			b.add_theme_stylebox_override("pressed", _outline_box(Color(0.85, 0.88, 0.92), base))
+			for n in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+				b.add_theme_color_override(n, C_DARK)
 	var g := GameState.GRANT_TOTAL
 	design_summary.text = "Смета: %s из %s\nОплата труда: %s (до %s)\nМероприятия: %s (от %s), штук: %d\nОборудование: %s (до %s)\nАренда и связь: %s\nАдмин. расходы: %s (до %s)" % [
 		GameState.fmt(GameState.plan_total()), GameState.fmt(g),
