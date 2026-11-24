@@ -65,3 +65,5 @@ func _draw() -> void:
 			draw_rect(Rect2(c.x - r * 0.34, c.y - r * 0.46, r * 0.68, r * 0.5), wh)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.34, c.y * 0.0 + r * 0.04), c + Vector2(r * 0.34, r * 0.04), c + Vector2(r * 0.12, r * 0.3), c + Vector2(-r * 0.12, r * 0.3)]), wh)
 			draw_rect(Rect2(c.x - r * 0.3, c.y + r * 0.36, r * 0.6, r * 0.12), wh)
+		"arrow":
+			draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r * 0.6), c + Vector2(r * 0.52, r * 0.05), c + Vector2(r * 0.18, r * 0.05), c + Vector2(r * 0.18, r * 0.58), c + Vector2(-r * 0.18, r * 0.58), c + Vector2(-r * 0.18, r * 0.05), c + Vector2(-r * 0.52, r * 0.05)]), wh)

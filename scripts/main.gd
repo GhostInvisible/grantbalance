@@ -2,6 +2,14 @@ extends "res://scripts/base_ui.gd"
 ## Игровой поток: проектирование, операции проекта, согласование с фондом,
 ## проверки, события и концовки. Общие элементы интерфейса лежат в base_ui.gd.
 
+const TimelineView = preload("res://scripts/timeline_view.gd")
+const STAMP_OK = preload("res://assets/stamp_ok.png")
+const STAMP_NO = preload("res://assets/stamp_no.png")
+const STAMP_FIX = preload("res://assets/stamp_fix.png")
+const END_WIN = preload("res://assets/end_win.png")
+const END_MID = preload("res://assets/end_mid.png")
+const END_LOSE = preload("res://assets/end_lose.png")
+
 var in_game := false
 var month_note := ""
 var tut_page := 0
@@ -70,7 +78,7 @@ func show_intro() -> void:
 	hud.hide()
 	_screen(BG_INTRO)
 	_add_yard()
-	_banner("Грантовый баланс", C_GREEN, "leaf")
+	_banner("Грантовый баланс", C_GREEN, "arrow")
 	content.add_child(_label("Вы директор новой НКО. Спроектируйте проект и смету, получите грант и доведите проект до конца: оформляйте документы и договоры, согласовывайте изменения с фондом. Проиграть можно в любой момент.", 19))
 	var play := _button("Новая игра", _tutorial_start)
 	content.add_child(play)
@@ -82,6 +90,7 @@ func show_intro() -> void:
 	content.add_child(_button("Сохранения", show_saves, C_TEAL))
 	content.add_child(_button("Профиль и награды", show_profile, C_PURPLE))
 	content.add_child(_button("Рейтинг и концовки", show_leaderboard, C_ORANGE))
+	content.add_child(_button("Как играть", show_help, C_BLUE))
 	content.add_child(_button("Глоссарий", show_glossary, C_GRAY))
 
 
@@ -180,6 +189,11 @@ func _design_refresh() -> void:
 		var base: Color = line_colors[str(p["cat"])]
 		var prefix := "ВЫБРАНО В ПРОЕКТ  |  " if on else "Нажмите, чтобы добавить  |  "
 		b.text = "%s\n%s  (%s)\n%s" % [prefix, p["name"], GameState.fmt(int(p["cost"])), p["desc"]]
+		b.icon = CHECK_ON if on else CHECK_OFF
+		b.expand_icon = false
+		b.add_theme_constant_override("icon_max_width", 32)
+		for icn in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color"]:
+			b.add_theme_color_override(icn, Color.WHITE if on else C_MUTED)
 		if on:
 			# выбранная позиция: яркая заливка цветом статьи, белый текст
 			var sel := base.darkened(0.25)
@@ -339,6 +353,9 @@ func show_month(note := "") -> void:
 	_set_nav(true)
 	_add_yard()
 	_banner("Месяц %d из %d" % [GameState.month, GameState.max_month], C_ORANGE, "leaf")
+	var tl = TimelineView.new()
+	tl.set_month(GameState.month, GameState.AUDIT_MONTHS)
+	content.add_child(tl)
 	_goal_card()
 	_budget_card()
 	_money_card()
@@ -375,6 +392,9 @@ func show_month(note := "") -> void:
 	var sb := _button("Сохранения", show_saves, C_TEAL)
 	sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	brow.add_child(sb)
+	var hb2 := _button("Справка", show_help, C_BLUE)
+	hb2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	brow.add_child(hb2)
 	var gb := _button("Глоссарий", show_glossary, C_GRAY)
 	gb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	brow.add_child(gb)
@@ -577,7 +597,10 @@ func _docs_picker(title: String, color: Color, who: String, say_text: String, re
 	_say(who, say_text)
 	for k in opts:
 		var b := _button(str(Data.DOC_TYPES[k]), _dp_toggle.bind(str(k)), C_BLUE)
-		b.custom_minimum_size = Vector2(0, 50)
+		b.custom_minimum_size = Vector2(0, 54)
+		b.icon = CHECK_OFF
+		b.expand_icon = false
+		b.add_theme_constant_override("icon_max_width", 30)
 		dp_btns[str(k)] = b
 		content.add_child(b)
 	content.add_child(_button("Готово", _dp_done, C_GREEN))
@@ -596,6 +619,7 @@ func _dp_toggle(k: String) -> void:
 	b.add_theme_stylebox_override("normal", _button_box(col))
 	b.add_theme_stylebox_override("hover", _button_box(col.lightened(0.1)))
 	b.add_theme_stylebox_override("pressed", _button_box(col.darkened(0.15), true))
+	b.icon = CHECK_ON if on else CHECK_OFF
 	b.text = ("Приложить: " if on else "") + str(Data.DOC_TYPES[k])
 
 
@@ -865,8 +889,9 @@ func _acc_show() -> void:
 	var c: Dictionary = acc_cases[acc_idx]
 	_screen(BG_REPORT)
 	_banner("Что включаем в отчёт? %d из %d" % [acc_idx + 1, acc_cases.size()], C_PURPLE, "doc")
-	var card := _card(content, C_YELLOW, Color(1, 0.98, 0.88))
-	card.add_child(_label(str(c["text"]), 22))
+	var card := _paper_card(content)
+	card.add_child(_plain("Расход к проверке", 15, C_MUTED))
+	card.add_child(_label(str(c["text"]), 23))
 	content.add_child(_button("Включить в отчёт", _acc_answer.bind("include"), C_GREEN))
 	content.add_child(_button("Не включать в отчёт", _acc_answer.bind("exclude"), C_RED))
 	content.add_child(_button("Доработать документы", _acc_answer.bind("fix"), C_ORANGE))
@@ -880,6 +905,7 @@ func _acc_answer(choice: String) -> void:
 	_screen(BG_GOOD if ok else BG_BAD)
 	_flash(C_GREEN if ok else C_RED)
 	_banner("Верно!" if ok else "Ошибка", C_GREEN if ok else C_RED, "heart" if ok else "fire")
+	_add_stamp(choice)
 	_say("vera", str(res["text"]))
 	acc_idx += 1
 	if acc_idx < acc_cases.size():
@@ -1014,11 +1040,115 @@ func _on_load_slot(sl: String) -> void:
 
 
 func _on_delete_slot(sl: String) -> void:
+	_screen(BG_BAD)
+	_set_nav(in_game)
+	_banner("Удалить сохранение?", C_RED, "fire")
+	var c := _card(content, C_RED)
+	c.add_child(_label("Сохранение будет удалено без возможности восстановления.", 20))
+	content.add_child(_button("Да, удалить", _do_delete.bind(sl), C_RED))
+	content.add_child(_button("Отмена", show_saves, C_GRAY))
+
+
+func _do_delete(sl: String) -> void:
 	GameState.delete_slot(sl)
 	show_saves()
 
 
 # ---------------------------------------------------------------- концовки и итоговый отчёт
+
+func _center_pivot(c: Control) -> void:
+	c.pivot_offset = c.size / 2.0
+
+
+func _pop_in(r: Control, from_scale: float) -> void:
+	r.resized.connect(_center_pivot.bind(r))
+	r.scale = Vector2(from_scale, from_scale)
+	r.self_modulate = Color(1, 1, 1, 0)
+	var tw := r.create_tween().set_parallel(true)
+	tw.tween_property(r, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(r, "self_modulate:a", 1.0, 0.18)
+
+
+func _add_stamp(choice: String) -> void:
+	var tex: Texture2D = STAMP_FIX
+	if choice == "include":
+		tex = STAMP_OK
+	elif choice == "exclude":
+		tex = STAMP_NO
+	var r := TextureRect.new()
+	r.texture = tex
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.custom_minimum_size = Vector2(0, 120)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(r)
+	_pop_in(r, 2.4)
+
+
+func _add_art(kind: String) -> void:
+	var tex: Texture2D = END_LOSE
+	if kind == "win":
+		tex = END_WIN
+	elif kind == "mid":
+		tex = END_MID
+	var r := TextureRect.new()
+	r.texture = tex
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.custom_minimum_size = Vector2(0, 200)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(r)
+	_pop_in(r, 0.3)
+
+
+func _paper_card(parent: Control) -> VBoxContainer:
+	var p := PanelContainer.new()
+	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var sb := _box(Color(1, 0.985, 0.92), 8, 18)
+	sb.set_border_width_all(1)
+	sb.border_color = Color(0.85, 0.80, 0.65)
+	sb.shadow_color = Color(0, 0, 0, 0.2)
+	sb.shadow_size = 10
+	sb.shadow_offset = Vector2(0, 6)
+	p.add_theme_stylebox_override("panel", sb)
+	parent.add_child(p)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	p.add_child(v)
+	return v
+
+
+func show_help() -> void:
+	if in_game:
+		hud.show()
+		update_hud()
+	else:
+		hud.hide()
+	_screen(BG_INTRO)
+	_set_nav(in_game)
+	_banner("Как играть", C_BLUE, "doc")
+	var steps: Array = [
+		["coin", C_BLUE, "1. Составьте проект", "Выберите позиции сметы. Фонд проверит заявку по своим правилам и может вернуть её на доработку."],
+		["leaf", C_GREEN, "2. Живите по месяцам", "В месяце три действия: дела проекта, бухгалтерия, консультация, отдых. Потом завершите месяц. Шкала вверху показывает, какой сейчас месяц; ромбики - проверки."],
+		["doc", C_TEAL, "3. Оформляйте дела", "Выберите вариант. Если он отличается от сметы, согласуйте с фондом заранее. Соберите комплект документов и запишите операцию в журнал по нужной статье."],
+		["heart", C_PINK, "4. Следите за шкалами", "Доверие, документы, нагрузка и результат меняются сами. Рядом с каждой написано изменение за месяц."],
+		["cup", C_PURPLE, "5. Проходите проверки", "Раз в три месяца и внезапно. Сначала приёмка документов в отчёт, потом проверка журнала. Ошибки обходятся деньгами и доверием."],
+		["fire", C_RED, "6. Помните, как проиграть", "Изменение сметы без согласования, слишком большой возврат денег, потеря доверия, выгорание команды и нехватка денег."],
+		["star", C_ORANGE, "7. Дойдите до конца", "После 12 месяца вас ждёт итоговая проверка и концовка с отчётом, почему всё закончилось именно так."],
+	]
+	for st in steps:
+		var c := _card(content, st[1])
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		c.add_child(row)
+		row.add_child(_icon(str(st[0]), st[1], 44))
+		var v := VBoxContainer.new()
+		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(v)
+		v.add_child(_label(str(st[2]), 20, st[1].darkened(0.2)))
+		v.add_child(_label(str(st[3]), 16))
+	content.add_child(_button("Назад", _go_game, C_GRAY))
+
 
 func _game_over() -> void:
 	show_ending(GameState.game_over_ending())
@@ -1037,6 +1167,7 @@ func show_ending(id: String) -> void:
 	_add_yard()
 	var ico := "cup" if kind == "win" else ("star" if kind == "mid" else "fire")
 	_banner("Концовка: " + str(e["title"]), col, ico)
+	_add_art(kind)
 	var c := _card(content, col, C_CREAM)
 	c.add_child(_label(str(e["text"]), 21))
 	if kind == "win":

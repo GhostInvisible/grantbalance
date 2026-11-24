@@ -5,6 +5,16 @@ extends Control
 const Data = preload("res://data/game_data.gd")
 const YardView = preload("res://scripts/yard_view.gd")
 const IconView = preload("res://scripts/icon_view.gd")
+const YARD_TEX = preload("res://assets/yard.png")
+const PORT_VERA = preload("res://assets/portrait_vera.png")
+const PORT_IGOR = preload("res://assets/portrait_igor.png")
+const PORT_MISHA = preload("res://assets/portrait_misha.png")
+const NAV_GAME = preload("res://assets/nav_game.png")
+const NAV_PROFILE = preload("res://assets/nav_profile.png")
+const NAV_AWARDS = preload("res://assets/nav_awards.png")
+const NAV_RANK = preload("res://assets/nav_rank.png")
+const CHECK_ON = preload("res://assets/check_on.png")
+const CHECK_OFF = preload("res://assets/check_off.png")
 
 # Палитра
 const C_PANEL := Color(1, 1, 1)
@@ -16,20 +26,20 @@ const C_RED := Color(0.85, 0.30, 0.30)
 const C_PINK := Color(0.82, 0.38, 0.60)
 const C_YELLOW := Color(0.95, 0.75, 0.20)
 const C_TEAL := Color(0.12, 0.62, 0.65)
-const C_DARK := Color(0.16, 0.22, 0.28)
+const C_DARK := Color(0.18, 0.20, 0.24)
 const C_MUTED := Color(0.42, 0.48, 0.52)
 const C_GRAY := Color(0.65, 0.67, 0.68)
 const C_CREAM := Color(1, 0.97, 0.85)
 
 # Фоны экранов
-const BG_INTRO := Color(0.88, 0.96, 0.92)
-const BG_BUDGET := Color(0.89, 0.93, 0.99)
-const BG_MONTH := Color(0.99, 0.96, 0.88)
-const BG_EVENT := Color(1.0, 0.92, 0.85)
-const BG_REPORT := Color(0.93, 0.90, 0.99)
-const BG_GOOD := Color(0.88, 0.97, 0.89)
-const BG_BAD := Color(0.99, 0.90, 0.89)
-const BG_END := Color(0.99, 0.94, 0.80)
+const BG_INTRO := Color(0.90, 0.91, 0.93)
+const BG_BUDGET := Color(0.90, 0.91, 0.94)
+const BG_MONTH := Color(0.92, 0.92, 0.93)
+const BG_EVENT := Color(0.94, 0.92, 0.91)
+const BG_REPORT := Color(0.92, 0.91, 0.94)
+const BG_GOOD := Color(0.89, 0.94, 0.90)
+const BG_BAD := Color(0.95, 0.90, 0.89)
+const BG_END := Color(0.94, 0.93, 0.88)
 
 var bg: ColorRect
 var content: VBoxContainer
@@ -95,10 +105,17 @@ func _build_ui() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root.add_child(scroll)
 
+	var inner := MarginContainer.new()
+	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner.add_theme_constant_override("margin_left", 8)
+	inner.add_theme_constant_override("margin_right", 8)
+	inner.add_theme_constant_override("margin_top", 6)
+	inner.add_theme_constant_override("margin_bottom", 22)
+	scroll.add_child(inner)
 	content = VBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 10)
-	scroll.add_child(content)
+	content.add_theme_constant_override("separation", 14)
+	inner.add_child(content)
 
 	_build_nav(root)
 
@@ -119,22 +136,28 @@ func _box(col: Color, radius := 12, pad := 12) -> StyleBoxFlat:
 
 
 func _card_box(tint: Color, accent: Color) -> StyleBoxFlat:
-	var sb := _box(tint, 14, 12)
-	sb.border_width_left = 8
+	var sb := _box(tint, 22, 14)
+	sb.border_width_left = 6
 	sb.border_color = accent
+	sb.shadow_color = Color(0, 0, 0, 0.14)
+	sb.shadow_size = 10
+	sb.shadow_offset = Vector2(0, 5)
 	return sb
 
 
 func _button_box(col: Color, pressed := false) -> StyleBoxFlat:
-	var sb := _box(col, 16, 12)
+	var sb := _box(col, 24, 12)
 	sb.border_width_bottom = 0 if pressed else 5
-	sb.border_color = col.darkened(0.3)
+	sb.border_color = col.darkened(0.32)
+	sb.shadow_color = Color(0, 0, 0, 0.10 if pressed else 0.22)
+	sb.shadow_size = 3 if pressed else 9
+	sb.shadow_offset = Vector2(0, 2 if pressed else 6)
 	return sb
 
 
 func _make_theme() -> Theme:
 	var t := Theme.new()
-	t.default_font_size = 20
+	t.default_font_size = 21
 	t.set_stylebox("normal", "Button", _button_box(C_GREEN))
 	t.set_stylebox("hover", "Button", _button_box(C_GREEN.lightened(0.1)))
 	t.set_stylebox("pressed", "Button", _button_box(C_GREEN.darkened(0.15), true))
@@ -142,11 +165,50 @@ func _make_theme() -> Theme:
 	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
 	for n in ["font_color", "font_hover_color", "font_pressed_color", "font_disabled_color", "font_focus_color"]:
 		t.set_color(n, "Button", Color.WHITE)
+	var fv := FontVariation.new()
+	fv.base_font = ThemeDB.fallback_font
+	fv.variation_embolden = 0.35
+	t.set_font("font", "Button", fv)
+	t.set_color("font_shadow_color", "Button", Color(0, 0, 0, 0.35))
+	t.set_constant("shadow_offset_x", "Button", 0)
+	t.set_constant("shadow_offset_y", "Button", 2)
 	t.set_color("font_color", "Label", C_DARK)
-	t.set_stylebox("panel", "PanelContainer", _box(C_PANEL, 16, 14))
-	t.set_stylebox("background", "ProgressBar", _box(Color(0.85, 0.87, 0.88), 6, 0))
-	t.set_stylebox("fill", "ProgressBar", _box(C_GREEN, 6, 0))
+	var pb := _box(C_PANEL, 22, 14)
+	pb.shadow_color = Color(0, 0, 0, 0.14)
+	pb.shadow_size = 10
+	pb.shadow_offset = Vector2(0, 5)
+	t.set_stylebox("panel", "PanelContainer", pb)
+	t.set_stylebox("background", "ProgressBar", _box(Color(0.82, 0.84, 0.86), 7, 0))
+	t.set_stylebox("fill", "ProgressBar", _box(C_GREEN, 7, 0))
 	return t
+
+
+var _gloss_cache: GradientTexture2D = null
+
+
+## Мягкий блик сверху: делает кнопки и плашки глянцевыми
+func _gloss_texture() -> GradientTexture2D:
+	if _gloss_cache == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 0.30))
+		g.set_color(1, Color(1, 1, 1, 0.03))
+		var tex := GradientTexture2D.new()
+		tex.gradient = g
+		tex.fill_from = Vector2(0.5, 0.0)
+		tex.fill_to = Vector2(0.5, 1.0)
+		tex.width = 4
+		tex.height = 64
+		_gloss_cache = tex
+	return _gloss_cache
+
+
+func _gloss_rect() -> TextureRect:
+	var gl := TextureRect.new()
+	gl.texture = _gloss_texture()
+	gl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gl.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gl.stretch_mode = TextureRect.STRETCH_SCALE
+	return gl
 
 
 func _label(text: String, size := 20, color := C_DARK) -> Label:
@@ -178,7 +240,7 @@ func _button(text: String, cb: Callable, color := C_GREEN) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	b.custom_minimum_size = Vector2(0, 58)
+	b.custom_minimum_size = Vector2(0, 62)
 	b.pressed.connect(cb)
 	b.add_theme_stylebox_override("normal", _button_box(color))
 	b.add_theme_stylebox_override("hover", _button_box(color.lightened(0.1)))
@@ -188,6 +250,14 @@ func _button(text: String, cb: Callable, color := C_GREEN) -> Button:
 	b.button_up.connect(_btn_scale.bind(b, 1.0))
 	b.mouse_entered.connect(_btn_scale.bind(b, 1.03))
 	b.mouse_exited.connect(_btn_scale.bind(b, 1.0))
+	var gl := _gloss_rect()
+	gl.anchor_right = 1.0
+	gl.anchor_bottom = 0.5
+	gl.offset_left = 12.0
+	gl.offset_right = -12.0
+	gl.offset_top = 7.0
+	gl.offset_bottom = 0.0
+	b.add_child(gl)
 	return b
 
 
@@ -221,21 +291,55 @@ func _card(parent: Control, accent := C_GREEN, tint := C_PANEL) -> VBoxContainer
 func _banner(text: String, color: Color, icon := "") -> void:
 	var p := PanelContainer.new()
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	p.add_theme_stylebox_override("panel", _box(color, 18, 14))
+	var sb := _box(color, 28, 14)
+	sb.border_width_bottom = 5
+	sb.border_color = color.darkened(0.32)
+	sb.shadow_color = Color(0, 0, 0, 0.28)
+	sb.shadow_size = 12
+	sb.shadow_offset = Vector2(0, 7)
+	p.add_theme_stylebox_override("panel", sb)
 	content.add_child(p)
+	p.add_child(_gloss_rect())
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("separation", 14)
 	p.add_child(row)
 	if icon != "":
-		row.add_child(_icon(icon, Color(1, 1, 1, 0.28), 46))
-	row.add_child(_label(text, 28, Color.WHITE))
+		row.add_child(_icon(icon, color.darkened(0.3), 50))
+	var l := _label(text, 30, Color.WHITE)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.35))
+	l.add_theme_constant_override("shadow_offset_y", 2)
+	row.add_child(l)
+
+
+func _portrait(who: String) -> Texture2D:
+	match who:
+		"igor":
+			return PORT_IGOR
+		"misha":
+			return PORT_MISHA
+	return PORT_VERA
+
+
+func _nav_icon(which: String) -> Texture2D:
+	match which:
+		"profile":
+			return NAV_PROFILE
+		"ach":
+			return NAV_AWARDS
+		"rank":
+			return NAV_RANK
+	return NAV_GAME
 
 
 func _make_bar(color: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(0, 14)
-	bar.add_theme_stylebox_override("fill", _box(color, 6, 0))
+	bar.custom_minimum_size = Vector2(0, 16)
+	var fill := _box(color, 8, 0)
+	fill.border_width_bottom = 2
+	fill.border_color = color.darkened(0.3)
+	bar.add_theme_stylebox_override("fill", fill)
 	return bar
 
 
@@ -270,13 +374,48 @@ func _fade_in() -> void:
 		i += 1
 
 
+func _season_tint(month: int) -> Color:
+	var season := clampi(int((month - 1) / 3.0), 0, 3)
+	match season:
+		1:
+			return Color(1.05, 1.03, 0.95)
+		2:
+			return Color(1.0, 0.86, 0.72)
+		3:
+			return Color(0.82, 0.90, 1.0)
+	return Color(1, 1, 1)
+
+
 func _add_yard() -> void:
 	var sig := GameState.scene_sig()
 	var flash := sig != GameState.last_sig and GameState.last_sig != ""
 	GameState.last_sig = sig
+	var frame := PanelContainer.new()
+	var fb := _box(Color.WHITE, 20, 5)
+	fb.shadow_color = Color(0, 0, 0, 0.25)
+	fb.shadow_size = 12
+	fb.shadow_offset = Vector2(0, 7)
+	frame.add_theme_stylebox_override("panel", fb)
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(frame)
+	var ar := AspectRatioContainer.new()
+	ar.ratio = 1024.0 / 523.0
+	ar.custom_minimum_size = Vector2(0, 250)
+	frame.add_child(ar)
+	var stack := Control.new()
+	ar.add_child(stack)
+	var state: Dictionary = GameState.scene_state()
+	var img := TextureRect.new()
+	img.texture = YARD_TEX
+	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	img.stretch_mode = TextureRect.STRETCH_SCALE
+	img.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	img.self_modulate = _season_tint(int(state["month"]))
+	stack.add_child(img)
 	var y = YardView.new()
-	y.set_state(GameState.scene_state(), flash)
-	content.add_child(y)
+	y.set_state(state, flash)
+	y.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stack.add_child(y)
 
 
 func _say(who: String, text: String) -> void:
@@ -286,15 +425,18 @@ func _say(who: String, text: String) -> void:
 	row.add_theme_constant_override("separation", 10)
 	content.add_child(row)
 	var av := PanelContainer.new()
-	av.custom_minimum_size = Vector2(64, 64)
-	av.pivot_offset = Vector2(32, 32)
+	av.custom_minimum_size = Vector2(78, 78)
+	av.pivot_offset = Vector2(39, 39)
 	av.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	av.add_theme_stylebox_override("panel", _box(col, 32, 4))
+	var pb := StyleBoxEmpty.new()
+	av.add_theme_stylebox_override("panel", pb)
 	row.add_child(av)
-	var ini := _plain(str(ch["name"]).left(1), 30, Color.WHITE)
-	ini.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ini.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	av.add_child(ini)
+	var pic := TextureRect.new()
+	pic.texture = _portrait(who)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.custom_minimum_size = Vector2(78, 78)
+	av.add_child(pic)
 	var tw := av.create_tween().set_loops()
 	tw.tween_property(av, "rotation", 0.09, 0.9).set_trans(Tween.TRANS_SINE)
 	tw.tween_property(av, "rotation", -0.09, 0.9).set_trans(Tween.TRANS_SINE)
@@ -481,9 +623,15 @@ func _build_nav(parent: Control) -> void:
 	var defs := [["Игра", C_GREEN, "go"], ["Профиль", C_PURPLE, "profile"], ["Награды", C_ORANGE, "ach"], ["Рейтинг", C_BLUE, "rank"]]
 	for d in defs:
 		var b := _button(str(d[0]), _nav_press.bind(d[2]), d[1])
-		b.custom_minimum_size = Vector2(0, 48)
+		b.custom_minimum_size = Vector2(0, 76)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.add_theme_font_size_override("font_size", 16)
+		b.add_theme_font_size_override("font_size", 15)
+		b.icon = _nav_icon(str(d[2]))
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		b.expand_icon = false
+		b.add_theme_constant_override("icon_max_width", 28)
+		b.add_theme_constant_override("h_separation", 0)
 		nav.add_child(b)
 	nav.hide()
 
